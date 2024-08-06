@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from typing import Dict, Any
 
 CONNECTION_STRING = "mongodb+srv://kuldeep-zetachi:24670290@zetachi.jzugb3e.mongodb.net/?retryWrites=true&w=majority&appName=Zetachi"
 
@@ -42,7 +43,12 @@ def list_all_jsons(collection_name):
     result = [{'id':doc['id'], 'title':doc['title']} for doc in documents]
     return result
 
-
+def fetch_doc_by_id(collection_name, doc_id) -> Dict[str, Any]:
+    results = fetch_json_from_collection(collection_name=collection_name, query={"id": doc_id})
+    results = results[0]
+    results.pop('_id')
+    print(results)
+    return results
 
 
 # create_collection("Kuldeep-Paul")

@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +13,7 @@ import logging
 from .schemas import DocumentSchema, Document
 from .models import DocumentModel
 from .utils import generate_unique_id, generate_sample_document
-from .mongo import add_json_to_collection, list_all_jsons
+from .mongo import add_json_to_collection, list_all_jsons, fetch_doc_by_id
 import json
 
 logging.basicConfig(level=logging.INFO)
@@ -46,6 +46,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     payload = decode_token(token)
+    print(token)
     if payload is None:
         raise HTTPException(status_code=401, detail="Invalid token")
 
@@ -131,8 +132,14 @@ async def create_document(user: UserModel = Depends(get_current_user), db: Async
 
     return {"document_id": new_document.id, "mongo_collection": new_document.collection}
 
-@app.get("/list-documents", response_model=list[Document])
+@app.get("/list-documents")
 async def list_documents(user: UserModel = Depends(get_current_user)):
     collection_name = user.email
     document_list = list_all_jsons(collection_name)
     return document_list
+
+@app.get("/fetch-document", response_model=Dict[str, Any])
+async def fetch_document(document_id: str, user: UserModel = Depends(get_current_user)):
+    collection_name = user.email
+    document = fetch_doc_by_id(collection_name, document_id)
+    return document
