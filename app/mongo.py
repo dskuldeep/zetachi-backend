@@ -29,13 +29,27 @@ def fetch_json_from_collection(collection_name, query=None):
     documents = collection.find(query)
     return list(documents)
 
-def update_json_in_collection(collection_name, json_doc):
+def update_json_in_collection(collection_name: str, json_doc: dict):
+    # Get the collection
     collection = db[collection_name]
-    result = collection.update_one({"id": json_doc["id"]}, {"$set": json_doc})
+    
+    # Ensure json_doc contains the necessary 'id' field
+    document_id = json_doc.get("id")
+    if not document_id:
+        raise ValueError("Document ID is required for update operations.")
+    
+    # Perform the update operation
+    result = collection.update_one({"id": document_id}, {"$set": json_doc})
+    
+    # Check if the update was successful
     if result.matched_count > 0:
-        print(f"Document with id {json_doc['id']} updated in collection {collection_name}")
+        if result.modified_count > 0:
+            print(f"Document with id {document_id} updated successfully in collection {collection_name}.")
+        else:
+            print(f"Document with id {document_id} was found but not modified in collection {collection_name}.")
     else:
-        print(f"No document found with id {json_doc['id']} in collection {collection_name}")
+        print(f"No document found with id {document_id} in collection {collection_name}.")
+
 
 def list_all_jsons(collection_name):
     collection = db[collection_name]
@@ -49,6 +63,15 @@ def fetch_doc_by_id(collection_name, doc_id) -> Dict[str, Any]:
     results.pop('_id')
     print(results)
     return results
+
+def delete_json_from_collection(collection_name: str, doc_id: str):
+    collection = db[collection_name]
+    result = collection.delete_one({"id": doc_id})
+    if result.deleted_count >0:
+        Message = f"Document Deleted with id: {doc_id} in collection {collection_name}"
+    else:
+        Message = "No Document Found to be deleted."
+    return Message
 
 
 # create_collection("Kuldeep-Paul")

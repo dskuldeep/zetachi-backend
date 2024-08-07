@@ -10,10 +10,10 @@ from .crud import create_user, authenticate_user
 from .models import User as UserModel  # Ensure this is the SQLAlchemy model
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from .schemas import DocumentSchema, Document
+from .schemas import DocumentSchema, EditorData
 from .models import DocumentModel
 from .utils import generate_unique_id, generate_sample_document
-from .mongo import add_json_to_collection, list_all_jsons, fetch_doc_by_id
+from .mongo import add_json_to_collection, list_all_jsons, fetch_doc_by_id, delete_json_from_collection, update_json_in_collection
 import json
 
 logging.basicConfig(level=logging.INFO)
@@ -143,3 +143,27 @@ async def fetch_document(document_id: str, user: UserModel = Depends(get_current
     collection_name = user.email
     document = fetch_doc_by_id(collection_name, document_id)
     return document
+
+@app.post("/delete-document", response_model=Dict[str, Any])
+async def delete_document(document_id: str, user: UserModel = Depends(get_current_user)):
+    collection_name = user.email
+    message = delete_json_from_collection(collection_name=collection_name, doc_id=document_id)
+    return{"doc_id": document_id, "collection": collection_name, "message": message}
+
+@app.post("/save-document", response_model=Dict[str, Any])
+async def save_document(document_id: str, data: EditorData, user: UserModel = Depends(get_current_user)):
+    collection_name = user.email
+    print("Received Data: ", data)
+    existing_doc = fetch_doc_by_id(collection_name=collection_name, doc_id=document_id)
+
+    if not existing_doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    #Prepare the data to be uploaded
+    updated_data = {
+        "id": document_id,
+        "content": data.dict()
+    }
+
+    update_json_in_collection(collection_name, updated_data)
+    return{"message": "Document updated successfully"}

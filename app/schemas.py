@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict, Union, Any
 
 class UserCreate(BaseModel):
     username: str
@@ -27,3 +27,8 @@ class DocumentSchema(BaseModel):
 class Document(BaseModel):
     id: str
     title: str
+
+class EditorData(BaseModel):
+    time: int
+    blocks: list
+    version: str
