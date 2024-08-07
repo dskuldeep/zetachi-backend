@@ -10,10 +10,10 @@ from .crud import create_user, authenticate_user
 from .models import User as UserModel  # Ensure this is the SQLAlchemy model
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from .schemas import DocumentSchema, EditorData
+from .schemas import DocumentSchema, EditorData, RenameTitleSchema
 from .models import DocumentModel
 from .utils import generate_unique_id, generate_sample_document
-from .mongo import add_json_to_collection, list_all_jsons, fetch_doc_by_id, delete_json_from_collection, update_json_in_collection
+from .mongo import add_json_to_collection, list_all_jsons, fetch_doc_by_id, delete_json_from_collection, update_json_in_collection, update_doc_title
 import json
 
 logging.basicConfig(level=logging.INFO)
@@ -167,3 +167,12 @@ async def save_document(document_id: str, data: EditorData, user: UserModel = De
 
     update_json_in_collection(collection_name, updated_data)
     return{"message": "Document updated successfully"}
+
+@app.post("/rename-document", response_model=RenameTitleSchema)
+async def rename_document(data: RenameTitleSchema, user: UserModel = Depends(get_current_user)):
+    collection_name = user.email
+    print("Received Data: ", data)
+    doc_id  = data.id
+    new_title = data.title
+    update_doc_title(collection_name, doc_id, new_title)
+    return{"id": doc_id, "title":new_title}

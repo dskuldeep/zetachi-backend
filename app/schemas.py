@@ -32,3 +32,7 @@ class EditorData(BaseModel):
     time: int
     blocks: list
     version: str
+
+class RenameTitleSchema(BaseModel):
+    id: str
+    title: str

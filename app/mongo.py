@@ -73,6 +73,19 @@ def delete_json_from_collection(collection_name: str, doc_id: str):
         Message = "No Document Found to be deleted."
     return Message
 
+def update_doc_title(collection_name: str, doc_id: str, new_title: str):
+    collection = db[collection_name]
+    result = collection.update_one({"id": doc_id}, {"$set": {"title": new_title}})
+    
+    # Check if the update was successful
+    if result.matched_count > 0:
+        if result.modified_count > 0:
+            print(f"Document with id {doc_id} updated successfully with new title in collection {collection_name}.")
+        else:
+            print(f"Document with id {doc_id} was found but the title was not modified in collection {collection_name}.")
+    else:
+        print(f"No document found with id {doc_id} in collection {collection_name}.")
+
 
 # create_collection("Kuldeep-Paul")
 # document = {
