@@ -1,5 +1,5 @@
 from typing import AsyncGenerator, Dict, Any
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -10,14 +10,20 @@ from .crud import create_user, authenticate_user
 from .models import User as UserModel  # Ensure this is the SQLAlchemy model
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from .schemas import DocumentSchema, EditorData, RenameTitleSchema
+from .schemas import DocumentSchema, EditorData, RenameTitleSchema, PromptSchema
 from .models import DocumentModel
 from .utils import generate_unique_id, generate_sample_document
 from .mongo import add_json_to_collection, list_all_jsons, fetch_doc_by_id, delete_json_from_collection, update_json_in_collection, update_doc_title
 import json
+from groq import Groq
+import os
+from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+load_dotenv()
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+groq = Groq(api_key=GROQ_API_KEY)
 
 app = FastAPI()
 
@@ -176,3 +182,60 @@ async def rename_document(data: RenameTitleSchema, user: UserModel = Depends(get
     new_title = data.title
     update_doc_title(collection_name, doc_id, new_title)
     return{"id": doc_id, "title":new_title}
+
+@app.post("/llm-query")
+async def llm_query(data: PromptSchema, user: UserModel = Depends(get_current_user)):
+    prompt = data.prompt
+    print(prompt)
+    chat_completion = groq.chat.completions.create(
+    #
+    # Required parameters
+    #
+    messages=[
+        # Set an optional system message. This sets the behavior of the
+        # assistant and can be used to provide specific instructions for
+        # how it should behave throughout the conversation.
+        {
+            "role": "system",
+            "content": "you are a helpful assistant."
+        },
+        # Set a user message for the assistant to respond to.
+        {
+            "role": "user",
+            "content": prompt,
+        }
+    ],
+
+    # The language model which will generate the completion.
+    model="llama3-8b-8192",
+
+    #
+    # Optional parameters
+    #
+
+    # Controls randomness: lowering results in less random completions.
+    # As the temperature approaches zero, the model will become deterministic
+    # and repetitive.
+    temperature=0.5,
+
+    # The maximum number of tokens to generate. Requests can use up to
+    # 32,768 tokens shared between prompt and completion.
+    max_tokens=1024,
+
+    # Controls diversity via nucleus sampling: 0.5 means half of all
+    # likelihood-weighted options are considered.
+    top_p=1,
+
+    # A stop sequence is a predefined or user-specified text string that
+    # signals an AI to stop generating content, ensuring its responses
+    # remain focused and concise. Examples include punctuation marks and
+    # markers like "[end]".
+    stop=None,
+
+    # If set, partial message deltas will be sent.
+    stream=False,
+    )
+
+    response = chat_completion.choices[0].message.content
+
+    return Response(content=json.dumps({"message": response}), media_type="application/json")

@@ -36,3 +36,6 @@ class EditorData(BaseModel):
 class RenameTitleSchema(BaseModel):
     id: str
     title: str
+
+class PromptSchema(BaseModel):
+    prompt: str
