@@ -1,0 +1,19 @@
+{
+    "conv_id": "123abc",
+    "title": "Sample Conversation",
+    "user_id": "sjdfbvsjdhbf",
+    "content":{
+        "blocks":[
+            {
+                "author": "User",
+                "message": "Hello",
+                "time": "2020/02/24:HH:MM:SS"
+            },
+            {
+                "author": "AI",
+                "message": "Hello",
+                "time": "2020/02/24:HH:MM:SS"
+            }
+        ]
+    }
+}

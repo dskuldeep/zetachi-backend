@@ -1,5 +1,6 @@
 from typing import AsyncGenerator, Dict, Any
-from fastapi import FastAPI, Depends, HTTPException, status, Response
+from fastapi import FastAPI, Depends, HTTPException, status, Response, File, UploadFile
+from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -18,6 +19,12 @@ import json
 from groq import Groq
 import os
 from dotenv import load_dotenv
+from datetime import datetime
+from .aws import upload_file_to_s3, get_file
+import uuid
+import re 
+from urllib.parse import quote
+from botocore.exceptions import ClientError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,6 +43,13 @@ app.add_middleware(
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def sanitize_filename(filename: str) -> str:
+    # Replace spaces with hyphens
+    filename = filename.replace(' ', '_')
+    # Remove or replace other special characters
+    filename = re.sub(r"[^\w\._-]", '', filename)
+    return filename
 
 @app.on_event("startup")
 async def startup():
@@ -188,13 +202,7 @@ async def llm_query(data: PromptSchema, user: UserModel = Depends(get_current_us
     prompt = data.prompt
     print(prompt)
     chat_completion = groq.chat.completions.create(
-    #
-    # Required parameters
-    #
     messages=[
-        # Set an optional system message. This sets the behavior of the
-        # assistant and can be used to provide specific instructions for
-        # how it should behave throughout the conversation.
         {
             "role": "system",
             "content": "you are a helpful assistant."
@@ -205,31 +213,10 @@ async def llm_query(data: PromptSchema, user: UserModel = Depends(get_current_us
             "content": prompt,
         }
     ],
-
-    # The language model which will generate the completion.
     model="llama3-8b-8192",
-
-    #
-    # Optional parameters
-    #
-
-    # Controls randomness: lowering results in less random completions.
-    # As the temperature approaches zero, the model will become deterministic
-    # and repetitive.
     temperature=0.5,
-
-    # The maximum number of tokens to generate. Requests can use up to
-    # 32,768 tokens shared between prompt and completion.
     max_tokens=1024,
-
-    # Controls diversity via nucleus sampling: 0.5 means half of all
-    # likelihood-weighted options are considered.
     top_p=1,
-
-    # A stop sequence is a predefined or user-specified text string that
-    # signals an AI to stop generating content, ensuring its responses
-    # remain focused and concise. Examples include punctuation marks and
-    # markers like "[end]".
     stop=None,
 
     # If set, partial message deltas will be sent.
@@ -239,3 +226,37 @@ async def llm_query(data: PromptSchema, user: UserModel = Depends(get_current_us
     response = chat_completion.choices[0].message.content
 
     return Response(content=json.dumps({"message": response}), media_type="application/json")
+
+@app.post("/upload-attachment")
+async def upload_file(file: UploadFile = File(...), user: UserModel = Depends(get_current_user)):
+    user_email = user.email
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    random_suffix = uuid.uuid4().hex
+    sanitized_filename = sanitize_filename(file.filename)
+    sanitized_filename = quote(sanitized_filename)
+
+    s3_object_key = f"{user_email}/{timestamp}_{random_suffix}_{sanitized_filename}"
+    bucket_name = "zetachi"
+    print(s3_object_key)
+
+    try:
+        upload_file_to_s3(file, bucket_name, s3_object_key)
+        return {
+            "message": "File uploaded successfully",
+            "s3_key": s3_object_key,
+            "filename": file.filename
+        }
+    except HTTPException as e:
+        raise e
+    
+@app.get("/download-attachment")
+async def download_file(file_key: str):
+    try:
+        response = get_file(file_key=file_key, bucket_name="zetachi")
+        file_stream = response['Body']
+        print(file_key)
+        return StreamingResponse(file_stream, media_type='application/octet-stream', headers={
+            'Content-Disposition': f'attachment; filename="{file_key.split("/")[-1]}"'
+        })
+    except ClientError as e:
+        raise HTTPException(status_code=404, detail="File not found")
