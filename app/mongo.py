@@ -86,7 +86,6 @@ def update_doc_title(collection_name: str, doc_id: str, new_title: str):
     else:
         print(f"No document found with id {doc_id} in collection {collection_name}.")
 
-
 # create_collection("Kuldeep-Paul")
 # document = {
 #   "id": "sample2",

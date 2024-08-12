@@ -4,6 +4,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from .llm import generate_answer_with_vector_search
 from .database import SessionLocal, engine, Base
 from .schemas import UserCreate, User as UserSchema, Token
 from .auth import create_access_token, create_refresh_token, decode_token
@@ -17,8 +18,6 @@ from .utils import generate_unique_id, generate_sample_document
 from .mongo import add_json_to_collection, list_all_jsons, fetch_doc_by_id, delete_json_from_collection, update_json_in_collection, update_doc_title
 import json
 from groq import Groq
-import os
-from dotenv import load_dotenv
 from datetime import datetime
 from .aws import upload_file_to_s3, get_file
 import uuid
@@ -28,8 +27,12 @@ from botocore.exceptions import ClientError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+import os
+from dotenv import load_dotenv
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
 groq = Groq(api_key=GROQ_API_KEY)
 
 app = FastAPI()
@@ -200,30 +203,8 @@ async def rename_document(data: RenameTitleSchema, user: UserModel = Depends(get
 @app.post("/llm-query")
 async def llm_query(data: PromptSchema, user: UserModel = Depends(get_current_user)):
     prompt = data.prompt
-    print(prompt)
-    chat_completion = groq.chat.completions.create(
-    messages=[
-        {
-            "role": "system",
-            "content": "you are a helpful assistant."
-        },
-        # Set a user message for the assistant to respond to.
-        {
-            "role": "user",
-            "content": prompt,
-        }
-    ],
-    model="llama3-8b-8192",
-    temperature=0.5,
-    max_tokens=1024,
-    top_p=1,
-    stop=None,
 
-    # If set, partial message deltas will be sent.
-    stream=False,
-    )
-
-    response = chat_completion.choices[0].message.content
+    response = generate_answer_with_vector_search(user_query=prompt, collection_name=user.email)
 
     return Response(content=json.dumps({"message": response}), media_type="application/json")
 

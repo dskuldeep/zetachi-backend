@@ -22,13 +22,6 @@ def generate_sample_document(id):
             "time": int(time.time() * 1000),
             "blocks": [
                 {
-                    "type": "header",
-                    "data": {
-                        "level": 1,
-                        "text": "Untitled"
-                    }
-                },
-                {
                     "type": "paragraph",
                     "data": {
                         "text": "This is a paragraph in the sample document. You can include various types of content here."
