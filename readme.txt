@@ -20,3 +20,6 @@ To run migrations:
  - alembic revision --autogenerate -m "Message"
  - alembic upgrade head
 
+ To run the app:
+ uvicorn app.main:app --reload
+

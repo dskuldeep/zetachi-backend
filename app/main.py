@@ -29,8 +29,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 import os
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 groq = Groq(api_key=GROQ_API_KEY)

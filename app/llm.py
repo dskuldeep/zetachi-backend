@@ -94,13 +94,12 @@ from langchain_groq import ChatGroq
 from langchain.prompts import PromptTemplate
 from langchain.chains.question_answering import load_qa_chain
 import os
-from dotenv import load_dotenv
 
 def generate_answer_with_vector_search(user_query: str, collection_name: str, top_k: int = 5):
     # Perform vector search to retrieve relevant documents
     relevant_docs = vector_search(user_query, collection_name, top_k)
     
-    load_dotenv()
+    # load_dotenv()
     os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
     
     ai_model="llama3-8b-8192"
