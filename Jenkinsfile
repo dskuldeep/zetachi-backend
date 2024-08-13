@@ -71,7 +71,7 @@ pipeline {
                             -e AWS_ACCESS_KEY=${AWS_ACCESS_KEY} \
                             -e AWS_SECRET_KEY=${AWS_SECRET_KEY} \
                             ${env.IMAGE_NAME}:latest
-                            EOF
+EOF
                             """
                         }
                     }
