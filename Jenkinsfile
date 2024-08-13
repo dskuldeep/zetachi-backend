@@ -56,7 +56,7 @@ pipeline {
                                         string(credentialsId: 'AWS_ACCESS_KEY', variable: 'AWS_ACCESS_KEY'),
                                         string(credentialsId: 'AWS_SECRET_KEY', variable: 'AWS_SECRET_KEY')]) {
                             sh """
-                            ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << 'EOF'
+                            ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP}<<'EOF'
                             if [ "$(docker ps -aq -f name=fastapi_app)" ]; then
                                 sudo docker stop fastapi_app
                                 sudo docker rm fastapi_app
