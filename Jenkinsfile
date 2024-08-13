@@ -57,24 +57,17 @@ pipeline {
                                         string(credentialsId: 'AWS_SECRET_KEY', variable: 'AWS_SECRET_KEY')]) {
                             sh """
                             ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << 'EOF'
-                            export DATABASE_URL=${DATABASE_URL}
-                            export SECRET_KEY=${SECRET_KEY}
-                            export ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
-                            export REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS}
-                            export GROQ_API_KEY=${GROQ_API_KEY}
-                            export AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
-                            export AWS_SECRET_KEY=${AWS_SECRET_KEY}
-                            dockersh pull ${env.IMAGE_NAME}:latest
-                            dockersh stop fastapi_app || true
-                            dockersh rm fastapi_app || true
-                            dockersh run -d --name fastapi_app -p 80:80 \
-                            -e DATABASE_URL=\${DATABASE_URL} \
-                            -e SECRET_KEY=\${SECRET_KEY} \
-                            -e ACCESS_TOKEN_EXPIRE_MINUTES=\${ACCESS_TOKEN_EXPIRE_MINUTES} \
-                            -e REFRESH_TOKEN_EXPIRE_DAYS=\${REFRESH_TOKEN_EXPIRE_DAYS} \
-                            -e GROQ_API_KEY=\${GROQ_API_KEY} \
-                            -e AWS_ACCESS_KEY=\${AWS_ACCESS_KEY} \
-                            -e AWS_SECRET_KEY=\${AWS_SECRET_KEY} \
+                            docker pull ${env.IMAGE_NAME}:latest
+                            docker stop fastapi_app || true
+                            docker rm fastapi_app || true
+                            docker run -d --name fastapi_app -p 80:80 \
+                            -e DATABASE_URL=${DATABASE_URL} \
+                            -e SECRET_KEY=${SECRET_KEY} \
+                            -e ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES} \
+                            -e REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS} \
+                            -e GROQ_API_KEY=${GROQ_API_KEY} \
+                            -e AWS_ACCESS_KEY=${AWS_ACCESS_KEY} \
+                            -e AWS_SECRET_KEY=${AWS_SECRET_KEY} \
                             ${env.IMAGE_NAME}:latest
                             EOF
                             """
