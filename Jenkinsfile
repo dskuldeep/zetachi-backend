@@ -29,7 +29,6 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Configure Docker CLI to use the remote Docker daemon
                     withEnv(["DOCKER_HOST=${env.DOCKER_HOST}"]) {
                         dockerImage = docker.build("${env.IMAGE_NAME}")
                     }
@@ -64,7 +63,7 @@ pipeline {
                             "AWS_SECRET_KEY=${env.AWS_SECRET_KEY}"
                         ]) {
                             sh """
-                            ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << EOF
+                            ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << 'EOF'
                             docker pull ${env.IMAGE_NAME}:latest
                             docker stop fastapi_app || true
                             docker rm fastapi_app || true
