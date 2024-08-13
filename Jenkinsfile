@@ -14,7 +14,7 @@ pipeline {
         // Docker image and EC2 instance details
         IMAGE_NAME = 'dskuldeep/zetachi-backend'
         AWS_EC2_IP = 'ec2-174-129-135-170.compute-1.amazonaws.com'
-        SSH_CREDENTIALS = credentials('Kuldeep-Access')
+        SSH_CREDENTIALS = 'Kuldeep-Access'
         DOCKERHUB_CREDENTIALS = 'dockerhub-credentials-id'
     }
 
