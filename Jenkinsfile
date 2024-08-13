@@ -15,6 +15,7 @@ pipeline {
         IMAGE_NAME = 'dskuldeep/zetachi-backend'
         AWS_EC2_IP = 'ec2-174-129-135-170.compute-1.amazonaws.com'
         SSH_CREDENTIALS = 'Kuldeep-Access'
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials-id'
     }
 
     stages {
@@ -35,7 +36,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
+                    docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS) {
                         dockerImage.push("${env.BUILD_NUMBER}")
                         dockerImage.push('latest')
                     }
@@ -47,22 +48,32 @@ pipeline {
             steps {
                 script {
                     sshagent([env.SSH_CREDENTIALS]) {
-                        sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@${env.AWS_EC2_IP} << EOF
-                        docker pull ${env.IMAGE_NAME}:latest
-                        docker stop fastapi_app || true
-                        docker rm fastapi_app || true
-                        docker run -d --name fastapi_app -p 80:80 \
-                        -e DATABASE_URL=${env.DATABASE_URL} \
-                        -e SECRET_KEY=${env.SECRET_KEY} \
-                        -e ACCESS_TOKEN_EXPIRE_MINUTES=${env.ACCESS_TOKEN_EXPIRE_MINUTES} \
-                        -e REFRESH_TOKEN_EXPIRE_DAYS=${env.REFRESH_TOKEN_EXPIRE_DAYS} \
-                        -e GROQ_API_KEY=${env.GROQ_API_KEY} \
-                        -e AWS_ACCESS_KEY=${env.AWS_ACCESS_KEY} \
-                        -e AWS_SECRET_KEY=${env.AWS_SECRET_KEY} \
-                        ${env.IMAGE_NAME}:latest
-                        EOF
-                        """
+                        withEnv([
+                            "DATABASE_URL=${env.DATABASE_URL}",
+                            "SECRET_KEY=${env.SECRET_KEY}",
+                            "ACCESS_TOKEN_EXPIRE_MINUTES=${env.ACCESS_TOKEN_EXPIRE_MINUTES}",
+                            "REFRESH_TOKEN_EXPIRE_DAYS=${env.REFRESH_TOKEN_EXPIRE_DAYS}",
+                            "GROQ_API_KEY=${env.GROQ_API_KEY}",
+                            "AWS_ACCESS_KEY=${env.AWS_ACCESS_KEY}",
+                            "AWS_SECRET_KEY=${env.AWS_SECRET_KEY}"
+                        ]) {
+                            sh """
+                            ssh -o StrictHostKeyChecking=no ec2-user@${env.AWS_EC2_IP} << EOF
+                            docker pull ${env.IMAGE_NAME}:latest
+                            docker stop fastapi_app || true
+                            docker rm fastapi_app || true
+                            docker run -d --name fastapi_app -p 80:80 \
+                            -e DATABASE_URL=\${DATABASE_URL} \
+                            -e SECRET_KEY=\${SECRET_KEY} \
+                            -e ACCESS_TOKEN_EXPIRE_MINUTES=\${ACCESS_TOKEN_EXPIRE_MINUTES} \
+                            -e REFRESH_TOKEN_EXPIRE_DAYS=\${REFRESH_TOKEN_EXPIRE_DAYS} \
+                            -e GROQ_API_KEY=\${GROQ_API_KEY} \
+                            -e AWS_ACCESS_KEY=\${AWS_ACCESS_KEY} \
+                            -e AWS_SECRET_KEY=\${AWS_SECRET_KEY} \
+                            ${env.IMAGE_NAME}:latest
+                            EOF
+                            """
+                        }
                     }
                 }
             }
