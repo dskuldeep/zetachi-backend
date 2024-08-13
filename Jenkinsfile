@@ -16,6 +16,7 @@ pipeline {
         AWS_EC2_IP = 'ec2-174-129-135-170.compute-1.amazonaws.com'
         SSH_CREDENTIALS = 'Kuldeep-Access'
         DOCKERHUB_CREDENTIALS = 'dockerhub-credentials-id'
+        DOCKER_HOST = 'tcp://174.129.135.170:2375' // Remote Docker daemon
     }
 
     stages {
@@ -28,7 +29,10 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    dockerImage = docker.build("${env.IMAGE_NAME}")
+                    // Configure Docker CLI to use the remote Docker daemon
+                    withEnv(["DOCKER_HOST=${env.DOCKER_HOST}"]) {
+                        dockerImage = docker.build("${env.IMAGE_NAME}")
+                    }
                 }
             }
         }
@@ -36,9 +40,11 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS) {
-                        dockerImage.push("${env.BUILD_NUMBER}")
-                        dockerImage.push('latest')
+                    withEnv(["DOCKER_HOST=${env.DOCKER_HOST}"]) {
+                        docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS) {
+                            dockerImage.push("${env.BUILD_NUMBER}")
+                            dockerImage.push('latest')
+                        }
                     }
                 }
             }
