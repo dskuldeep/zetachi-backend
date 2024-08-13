@@ -2,15 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // Jenkins credentials for environment variables
-        DATABASE_URL = credentials('DATABASE_URL')
-        SECRET_KEY = credentials('SECRET_KEY')
-        ACCESS_TOKEN_EXPIRE_MINUTES = credentials('ACCESS_TOKEN_EXPIRE_MINUTES')
-        REFRESH_TOKEN_EXPIRE_DAYS = credentials('REFRESH_TOKEN_EXPIRE_DAYS')
-        GROQ_API_KEY = credentials('GROQ_API_KEY')
-        AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
-        AWS_SECRET_KEY = credentials('AWS_SECRET_KEY')
-
         // Docker image and EC2 instance details
         IMAGE_NAME = 'dskuldeep/zetachi-backend'
         AWS_EC2_IP = 'ec2-174-129-135-170.compute-1.amazonaws.com'
@@ -29,6 +20,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
+                    // Build Docker image using remote Docker daemon
                     withEnv(["DOCKER_HOST=${env.DOCKER_HOST}"]) {
                         dockerImage = docker.build("${env.IMAGE_NAME}")
                     }
@@ -39,10 +31,13 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    withEnv(["DOCKER_HOST=${env.DOCKER_HOST}"]) {
-                        docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS) {
-                            dockerImage.push("${env.BUILD_NUMBER}")
-                            dockerImage.push('latest')
+                    // Push Docker image to DockerHub
+                    withCredentials([usernamePassword(credentialsId: env.DOCKERHUB_CREDENTIALS, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        withEnv(["DOCKER_HOST=${env.DOCKER_HOST}"]) {
+                            docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS) {
+                                dockerImage.push("${env.BUILD_NUMBER}")
+                                dockerImage.push('latest')
+                            }
                         }
                     }
                 }
@@ -53,17 +48,22 @@ pipeline {
             steps {
                 script {
                     sshagent([env.SSH_CREDENTIALS]) {
-                        withEnv([
-                            "DATABASE_URL=${env.DATABASE_URL}",
-                            "SECRET_KEY=${env.SECRET_KEY}",
-                            "ACCESS_TOKEN_EXPIRE_MINUTES=${env.ACCESS_TOKEN_EXPIRE_MINUTES}",
-                            "REFRESH_TOKEN_EXPIRE_DAYS=${env.REFRESH_TOKEN_EXPIRE_DAYS}",
-                            "GROQ_API_KEY=${env.GROQ_API_KEY}",
-                            "AWS_ACCESS_KEY=${env.AWS_ACCESS_KEY}",
-                            "AWS_SECRET_KEY=${env.AWS_SECRET_KEY}"
-                        ]) {
+                        withCredentials([string(credentialsId: 'DATABASE_URL', variable: 'DATABASE_URL'),
+                                         string(credentialsId: 'SECRET_KEY', variable: 'SECRET_KEY'),
+                                         string(credentialsId: 'ACCESS_TOKEN_EXPIRE_MINUTES', variable: 'ACCESS_TOKEN_EXPIRE_MINUTES'),
+                                         string(credentialsId: 'REFRESH_TOKEN_EXPIRE_DAYS', variable: 'REFRESH_TOKEN_EXPIRE_DAYS'),
+                                         string(credentialsId: 'GROQ_API_KEY', variable: 'GROQ_API_KEY'),
+                                         string(credentialsId: 'AWS_ACCESS_KEY', variable: 'AWS_ACCESS_KEY'),
+                                         string(credentialsId: 'AWS_SECRET_KEY', variable: 'AWS_SECRET_KEY')]) {
                             sh """
                             ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << 'EOF'
+                            export DATABASE_URL=${DATABASE_URL}
+                            export SECRET_KEY=${SECRET_KEY}
+                            export ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+                            export REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS}
+                            export GROQ_API_KEY=${GROQ_API_KEY}
+                            export AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+                            export AWS_SECRET_KEY=${AWS_SECRET_KEY}
                             docker pull ${env.IMAGE_NAME}:latest
                             docker stop fastapi_app || true
                             docker rm fastapi_app || true
