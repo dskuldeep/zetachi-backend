@@ -57,10 +57,10 @@ pipeline {
                                         string(credentialsId: 'AWS_SECRET_KEY', variable: 'AWS_SECRET_KEY')]) {
                             sh """
                             ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << 'EOF'
-                            docker pull ${env.IMAGE_NAME}:latest
-                            docker stop fastapi_app || true
-                            docker rm fastapi_app || true
-                            docker run -d --name fastapi_app -p 80:80 \
+                            sudo docker pull ${env.IMAGE_NAME}:latest
+                            sudo docker stop fastapi_app || true
+                            sudo docker rm fastapi_app || true
+                            sudo docker run -d --name fastapi_app -p 80:80 \
                             -e DATABASE_URL=${DATABASE_URL} \
                             -e SECRET_KEY=${SECRET_KEY} \
                             -e ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES} \
