@@ -56,22 +56,23 @@ pipeline {
                                         string(credentialsId: 'AWS_ACCESS_KEY', variable: 'AWS_ACCESS_KEY'),
                                         string(credentialsId: 'AWS_SECRET_KEY', variable: 'AWS_SECRET_KEY')]) {
                             sh """
-ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << 'EOF'
-if [ "$(docker ps -aq -f name=fastapi_app)" ]; then
-    sudo docker stop fastapi_app
-    sudo docker rm fastapi_app
-fi
-sudo docker run -d --name fastapi_app -p 80:80 \
--e DATABASE_URL=${DATABASE_URL} \
--e SECRET_KEY=${SECRET_KEY} \
--e ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES} \
--e REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS} \
--e GROQ_API_KEY=${GROQ_API_KEY} \
--e AWS_ACCESS_KEY=${AWS_ACCESS_KEY} \
--e AWS_SECRET_KEY=${AWS_SECRET_KEY} \
-${env.IMAGE_NAME}:latest
-EOF
-"""
+                            ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << 'EOF'
+                            if [ "$(docker ps -aq -f name=fastapi_app)" ]; then
+                                sudo docker stop fastapi_app
+                                sudo docker rm fastapi_app
+                            fi
+                            sudo docker pull ${env.IMAGE_NAME}:latest
+                            sudo docker run -d --name fastapi_app -p 80:80 \
+                            -e DATABASE_URL=${DATABASE_URL} \
+                            -e SECRET_KEY=${SECRET_KEY} \
+                            -e ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES} \
+                            -e REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS} \
+                            -e GROQ_API_KEY=${GROQ_API_KEY} \
+                            -e AWS_ACCESS_KEY=${AWS_ACCESS_KEY} \
+                            -e AWS_SECRET_KEY=${AWS_SECRET_KEY} \
+                            ${env.IMAGE_NAME}:latest
+                            EOF
+                            """
                         }
                     }
                 }
