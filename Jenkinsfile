@@ -21,7 +21,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/dskuldeep/zetachi-backend.git'
+                git branch: 'main', url: 'https://github.com/dskuldeep/zetachi-backend.git', credentialsId: '438bf32e-3b5e-4512-9c92-5eeca959630c'
             }
         }
 
