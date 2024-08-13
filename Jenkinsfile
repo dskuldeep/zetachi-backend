@@ -58,7 +58,7 @@ pipeline {
                             "AWS_SECRET_KEY=${env.AWS_SECRET_KEY}"
                         ]) {
                             sh """
-                            ssh -o StrictHostKeyChecking=no ec2-user@${env.AWS_EC2_IP} << EOF
+                            ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << EOF
                             docker pull ${env.IMAGE_NAME}:latest
                             docker stop fastapi_app || true
                             docker rm fastapi_app || true
