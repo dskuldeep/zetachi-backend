@@ -4,10 +4,9 @@ pipeline {
     environment {
         // Docker image and EC2 instance details
         IMAGE_NAME = 'dskuldeep/zetachi-backend'
-        AWS_EC2_IP = 'ec2-174-129-135-170.compute-1.amazonaws.com'
-        SSH_CREDENTIALS = 'Kuldeep-Access'
+        AWS_EC2_IP = 'ec2-3-92-30-154.compute-1.amazonaws.com'
+        SSH_CREDENTIALS = 'Kuldeep-Backend'
         DOCKERHUB_CREDENTIALS = 'dockerhub-credentials-id'
-        DOCKER_HOST = 'tcp://174.129.135.170:2375' // Remote Docker daemon
     }
 
     stages {
@@ -20,10 +19,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build Docker image using remote Docker daemon
-                    withEnv(["DOCKER_HOST=${env.DOCKER_HOST}"]) {
-                        dockerImage = docker.build("${env.IMAGE_NAME}")
-                    }
+                    // Build Docker image on Jenkins server (local Docker daemon)
+                    dockerImage = docker.build("${env.IMAGE_NAME}")
                 }
             }
         }
@@ -31,18 +28,17 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    // Push Docker image to DockerHub
+                    // Push Docker image to DockerHub using local Docker daemon
                     withCredentials([usernamePassword(credentialsId: env.DOCKERHUB_CREDENTIALS, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        withEnv(["DOCKER_HOST=${env.DOCKER_HOST}"]) {
-                            docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS) {
-                                dockerImage.push("${env.BUILD_NUMBER}")
-                                dockerImage.push('latest')
-                            }
+                        docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS) {
+                            dockerImage.push("${env.BUILD_NUMBER}")
+                            dockerImage.push('latest')
                         }
                     }
                 }
             }
         }
+
 
         stage('Deploy to EC2') {
             steps {
@@ -58,11 +54,11 @@ pipeline {
                             sh """
                             ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << "EOF"
                             if [ "\$(docker ps -aq -f name=fastapi_app)" ]; then
-                                sudo docker stop fastapi_app
-                                sudo docker rm fastapi_app
+                                docker stop fastapi_app
+                                docker rm fastapi_app
                             fi
-                            sudo docker pull ${env.IMAGE_NAME}:latest
-                            sudo docker run -d --name fastapi_app -p 80:80 \
+                            docker pull ${env.IMAGE_NAME}:latest
+                            docker run -d --name fastapi_app -p 80:80 \
                             -e DATABASE_URL=${DATABASE_URL} \
                             -e SECRET_KEY=${SECRET_KEY} \
                             -e ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES} \
