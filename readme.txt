@@ -25,3 +25,5 @@ To run migrations:
  To run the app:
  uvicorn app.main:app --reload
 
+ This is the frontend application.
+
