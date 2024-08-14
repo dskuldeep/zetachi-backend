@@ -78,7 +78,54 @@ EOF
 
     post {
         always {
+            // Clean workspace
             cleanWs()
+
+            // Send email notification
+            emailext (
+                to: 'kuldeep@getzetachi.com',
+                subject: "Jenkins Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
+                body: """
+                <p>Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}</p>
+                <p>Job: ${env.JOB_NAME}</p>
+                <p>Build URL: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                <p>Duration: ${currentBuild.durationString}</p>
+                <p>Build Log:</p>
+                <pre>${currentBuild.rawBuild.getLog(1000).join("\\n")}</pre>
+                """,
+                mimeType: 'text/html'
+            )
+        }
+
+        // Optionally, add other post actions like success or failure
+        success {
+            emailext (
+                to: 'kuldeep@getzetachi.com',
+                subject: "SUCCESS: Jenkins Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}",
+                body: """
+                <p>Build #${env.BUILD_NUMBER} was successful!</p>
+                <p>Job: ${env.JOB_NAME}</p>
+                <p>Build URL: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                <p>Duration: ${currentBuild.durationString}</p>
+                """,
+                mimeType: 'text/html'
+            )
+        }
+
+        failure {
+            emailext (
+                to: 'kuldeep@getzetachi.com',
+                subject: "FAILED: Jenkins Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}",
+                body: """
+                <p>Build #${env.BUILD_NUMBER} has failed!</p>
+                <p>Job: ${env.JOB_NAME}</p>
+                <p>Build URL: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                <p>Duration: ${currentBuild.durationString}</p>
+                <p>Build Log:</p>
+                <pre>${currentBuild.rawBuild.getLog(1000).join("\\n")}</pre>
+                """,
+                mimeType: 'text/html'
+            )
         }
     }
 }
