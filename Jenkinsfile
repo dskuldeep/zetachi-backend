@@ -58,7 +58,7 @@ pipeline {
                                 docker rm fastapi_app
                             fi
                             docker pull ${env.IMAGE_NAME}:latest
-                            docker run -d --name fastapi_app -p 80:80 \
+                            docker run -d --name fastapi_app -p 8000:8000 \
                             -e DATABASE_URL=${DATABASE_URL} \
                             -e SECRET_KEY=${SECRET_KEY} \
                             -e ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES} \
