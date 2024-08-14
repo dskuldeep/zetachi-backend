@@ -14,6 +14,8 @@ File Structure
 │   |__ versions/
 │── alembic.ini
 └── requirements.txt
+└── Dockerfile
+└── Jenkinsfile
 
 
 To run migrations: 
