@@ -24,6 +24,8 @@ import uuid
 import re 
 from urllib.parse import quote
 from botocore.exceptions import ClientError
+# from .algolia import get_user_index  # Import the function to get user-specific index
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -241,3 +243,15 @@ async def download_file(file_key: str):
         })
     except ClientError as e:
         raise HTTPException(status_code=404, detail="File not found")
+
+
+# @app.get("/search")
+# async def search(query: str, user: UserModel = Depends(get_current_user)):
+#     user_email = user.email  # Get the user's email from the token
+#     index = get_user_index(user_email)  # Get the user's specific index
+
+#     try:
+#         results = index.search(query)  # Search within the user's index
+#         return results
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))

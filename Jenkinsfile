@@ -50,7 +50,9 @@ pipeline {
                                         string(credentialsId: 'REFRESH_TOKEN_EXPIRE_DAYS', variable: 'REFRESH_TOKEN_EXPIRE_DAYS'),
                                         string(credentialsId: 'GROQ_API_KEY', variable: 'GROQ_API_KEY'),
                                         string(credentialsId: 'AWS_ACCESS_KEY', variable: 'AWS_ACCESS_KEY'),
-                                        string(credentialsId: 'AWS_SECRET_KEY', variable: 'AWS_SECRET_KEY')]) {
+                                        string(credentialsId: 'AWS_SECRET_KEY', variable: 'AWS_SECRET_KEY'),
+                                        string(credentialsId: 'ALGOLIA_APP_ID', variable: 'ALGOLIA_APP_ID'),
+                                        string(credentialsId: 'ALGOLIA_API_KEY', variable: 'ALGOLIA_API_KEY')]) {
                             sh """
                             ssh -o StrictHostKeyChecking=no ubuntu@${env.AWS_EC2_IP} << "EOF"
                             if [ "\$(docker ps -aq -f name=fastapi_app)" ]; then
@@ -66,6 +68,8 @@ pipeline {
                             -e GROQ_API_KEY=${GROQ_API_KEY} \
                             -e AWS_ACCESS_KEY=${AWS_ACCESS_KEY} \
                             -e AWS_SECRET_KEY=${AWS_SECRET_KEY} \
+                            -e ALGOLIA_APP_ID=${ALGOLIA_APP_ID} \
+                            -e ALGOLIA_API_KEY=${ALGOLIA_API_KEY} \
                             ${env.IMAGE_NAME}:latest
 EOF
                             """
